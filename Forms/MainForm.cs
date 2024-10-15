@@ -3,38 +3,28 @@ using MECMOD;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using ProductStructureTypeLib;
-using System.Runtime.InteropServices;
-using System.Text;
 using Application = INFITF.Application;
 using System.ComponentModel;
 using Microsoft.Extensions.Configuration;
 
 namespace TechBOM
 {
-    public partial class MainForm : Form
+    public partial class MainForm : CustomMetroForm
     {
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool QueryDosDevice(string lpDeviceName, StringBuilder lpTargetPath, int ucchMax);
+        //[DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        //private static extern bool QueryDosDevice(string lpDeviceName, StringBuilder lpTargetPath, int ucchMax);
+        
+        private static readonly Application _catia = CatiaConnect.Instance.ConnectCatia();
+        private static Document _oRootDocument = _catia.ActiveDocument;
+        private readonly ExcelHelper _excelHelper = new();
 
-        private Document _oRootDocument;
-        private readonly Application _catia = CatiaConnect.Instance.ConnectCatia();
-        private readonly ExcelHelper _excelHelper = new ExcelHelper();
-
-        private BomEntry _bomEntry;
-        private readonly IWorkbook _workBook;
-        private ISheet _workSheet;
-
-        private readonly DateTime _dateTime = DateTime.Now;
-
+        private IWorkbook _workbook;
+        private ISheet? _workSheet;
         private string _savePath;
         private string _saveFileName;
-
-        private string _selectedDepth;
-
-        private readonly string saveFilePath;
+        private string _saveFilePathFormData;
         private string _rootPartNumber;
-        private readonly string _filePathTemplate;
-        private readonly string _currentNodeName = string.Empty;
+        private string _filePathTemplate { get; set; }
         
         private readonly List<PartDocument> _productionParts = new List<PartDocument>();
 
@@ -45,31 +35,33 @@ namespace TechBOM
         public MainForm()
         {
             InitializeComponent();
-            InitializeBackgroundWorker();
             InitializeLanguageComboBox();
             ComboBoxLanguage_SelectedIndexChanged(null, null);
-            _filePathTemplate = GetTemplatePath();
-            _workBook = new XSSFWorkbook(_filePathTemplate);
-            _oRootDocument = _catia.ActiveDocument;
-            saveFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "formData.txt");
-            LoadFormData();
         }
 
         private string GetTemplatePath()
         {
             // Создаем конфигурацию для чтения из appsettings.json
             var builder = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory) // Корневая папка приложения
-                .AddJsonFile("AppSettings.json", optional: true, reloadOnChange: true);
+                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                .AddJsonFile("appSettings.json", optional: false, reloadOnChange: true);
 
             IConfiguration configuration = builder.Build();
 
-            // Получаем относительный путь из конфигурации
-            string relativePath = configuration["FilePaths:TemplatePath"];
+            string relativePath = configuration["FilePaths:TemplatePath"]!;
 
-            // Преобразуем в полный путь
-            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, relativePath);
+            if (string.IsNullOrEmpty(relativePath))
+            {
+                throw new ArgumentException("Template path is empty");
+            }
 
+            var file = new FileInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, relativePath));
+            if(!file.Exists)
+            {
+                throw new DirectoryNotFoundException("Template file does not exist");
+            }
+
+            return file.FullName;
         }
 
         private void InitializeBackgroundWorker()
@@ -89,7 +81,7 @@ namespace TechBOM
             if (_oRootDocument is ProductDocument oProductDoc)
             {
                 Counter counter = Counter.Instance;
-
+                var depth = string.Empty;
                 // Сбрасываем предыдущие результаты перед началом нового подсчета
                 counter.Reset();
 
@@ -97,10 +89,10 @@ namespace TechBOM
 
                 Invoke((MethodInvoker)delegate
                 {
-                    _selectedDepth = comboBox_ScanDepth.Text; // Получаем текст из ComboBox в потоке UI
+                    depth = comboBox_ScanDepth.Text; // Получаем текст из ComboBox в потоке UI
                 });
 
-                counter.CountParts(oProductDoc.Product, 0, _selectedDepth);
+                counter.CountParts(oProductDoc.Product, 0, depth);
             }
         }
 
@@ -121,7 +113,7 @@ namespace TechBOM
             ProcessBomEntry();
 
             _backgroundWorker.ReportProgress(100, "Saving BOM entries...");
-            SaveBomEntry();
+            SaveExcelDocument(_saveFileName);
 
             _excelHelper.OpenFile(_saveFileName);
         }
@@ -141,7 +133,7 @@ namespace TechBOM
 
         private void SaveFormData()
         {
-            using (StreamWriter writer = new StreamWriter(saveFilePath))
+            using (StreamWriter writer = new(_saveFilePathFormData))
             {
                 writer.WriteLine(textBox_Customer.Text);
                 writer.WriteLine(textBox_Oem.Text);
@@ -151,9 +143,9 @@ namespace TechBOM
 
         private void LoadFormData()
         {
-            if (System.IO.File.Exists(saveFilePath))
+            if (System.IO.File.Exists(_saveFilePathFormData))
             {
-                using (StreamReader reader = new StreamReader(saveFilePath))
+                using (StreamReader reader = new(_saveFilePathFormData))
                 {
                     textBox_Customer.Text = reader.ReadLine();
                     textBox_Oem.Text = reader.ReadLine();
@@ -165,15 +157,56 @@ namespace TechBOM
 
         private void Button_Start_Click(object sender, EventArgs e)
         {
-            _productionParts.Clear();
+            InitializeBackgroundWorker();
 
-            //if (!radioButton_Bg.Checked && !radioButton_Zb.Checked)
-            //{
-            //    MessageBox.Show("Please slect the unit type");
-            //    return;
-            //}
+            _productionParts.Clear();
+            
+            CatiaHelper.Instance.CatHelperReset();
+
+            _saveFileName = Path.Combine( _savePath,$"{_rootPartNumber}.xlsx");
+
+            if (System.IO.File.Exists(_saveFileName))
+            {
+                DialogResult result = MessageBox.Show("File already exists. Do you want to overwrite it?", "File exists", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                
+                if (result == DialogResult.Yes)
+                {
+                    bool isSaved = false;
+
+                    while (!isSaved)
+                    {
+                        try
+                        {
+                            System.IO.File.Copy(_filePathTemplate, _saveFileName, overwrite: true);
+                            isSaved = true;
+                        }
+                        catch (IOException)
+                        {
+                            string owner = GetFileOwner(_saveFileName);
+                            result = MessageBox.Show($"The file is currently opened by {owner}. Please close the file and try again.", "File in use", MessageBoxButtons.OKCancel);
+
+                            if (result == DialogResult.Cancel)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                System.IO.File.Copy(_filePathTemplate, _saveFileName, overwrite: true);
+            }
+            
+
+            using (FileStream file = new(_saveFileName, FileMode.Open, FileAccess.ReadWrite))
+            {
+                _workbook = new XSSFWorkbook(file); 
+            }
+
             _oRootDocument = _catia.ActiveDocument;
-            _backgroundWorker.RunWorkerAsync(); // Запуск работы в фоновом режиме
+            
+            _backgroundWorker.RunWorkerAsync();
         }
 
         private void GetHeadParameters()
@@ -198,11 +231,13 @@ namespace TechBOM
 
         private void FillHeadData()
         {
+            DateTime dateTime = DateTime.Now;
+
             if (_oRootDocument is ProductDocument oProductDoc)
             {
                 SingleNode singleNode = new SingleNode(oProductDoc);
 
-                _workSheet = _workBook.GetSheet("bom");
+                _workSheet = _workbook.GetSheet("bom");
 
                 if (singleNode.IsZsb)
                 {
@@ -229,7 +264,7 @@ namespace TechBOM
                     ICell oCellProject = oRowProject.GetCell(3);
                     oCellProject.SetCellValue(textBox_Project.Text);
 
-                    string formattedDate = _dateTime.ToString("dd.MM.yyyy");
+                    string formattedDate = dateTime.ToString("dd.MM.yyyy");
                     IRow oRowDate = _workSheet.GetRow(7);
                     ICell oCellDate = oRowDate.GetCell(3);
                     oCellDate.SetCellValue(formattedDate);
@@ -259,41 +294,37 @@ namespace TechBOM
 
         private void ProcessBomEntry()
         {
-            CatiaHelper catiaHelper = new CatiaHelper();
-
-            catiaHelper.CatHelperReset();
+            CatiaHelper.Instance.CatHelperReset();
 
             if (_oRootDocument is ProductDocument oProductDoc)
             {
                 Product oRootProd = oProductDoc.Product;
-                _bomEntry = new BomEntry(_workSheet);
-
-                // Обращение к ComboBox через Invoke
+                var bomEntry = new BomEntry(_workSheet);
+                var depth = string.Empty;
+                
                 Invoke((MethodInvoker)delegate
                 {
-                    _selectedDepth = comboBox_ScanDepth.Text; // Получаем текст из ComboBox в потоке UI
+                    depth = comboBox_ScanDepth.Text;
                 });
 
                 // Walk down the tree and fill the BOM
-                catiaHelper.WalkDownTree(oRootProd, 0 , _selectedDepth);
+                CatiaHelper.Instance.WalkDownTree(oRootProd, 0 , depth);
 
                 // Order by PosNumber
-                var orderedNodes = from s in catiaHelper.Nodes
+                var orderedNodes = from s in CatiaHelper.Instance.Nodes
                                    orderby s.PosNumber ascending
                                    select s;
-                catiaHelper.Nodes = orderedNodes.ToList();
+                CatiaHelper.Instance.Nodes = orderedNodes.ToList();
 
-                int totalNodes = catiaHelper.Nodes.Count;
+                int totalNodes = CatiaHelper.Instance.Nodes.Count;
                 int i = 0;
 
-                // Обрабатываем каждый узел и обновляем прогресс
-                foreach (var node in catiaHelper.Nodes)
+                foreach (var node in CatiaHelper.Instance.Nodes)
                 {
-                    _bomEntry.FillBomValues(node, i);
+                    bomEntry.FillBomValues(node, i);
                     i++;
 
-                    // Сообщаем прогресс по мере обработки каждого узла
-                    int progress = 40 + (i * 50 / totalNodes); // Прогресс от 40% до 90%
+                    int progress = 40 + (i * 50 / totalNodes);
                     _backgroundWorker.ReportProgress(progress);
                 }
             }
@@ -302,18 +333,6 @@ namespace TechBOM
         private void Button_Cancel_Click(object sender, EventArgs e)
         {
             Close();
-        }
-
-        private void SaveBomEntry()
-        {
-            //string rootPath = AppDomain.CurrentDomain.BaseDirectory;
-            //string testFolderPath = Path.Combine(rootPath, "Test");
-            //if (!Directory.Exists(testFolderPath))
-            //{
-            //    Directory.CreateDirectory(testFolderPath);
-            //}
-            _saveFileName = _savePath + "\\" + _rootPartNumber + ".xlsx";
-            SaveExcelDocument(_saveFileName);
         }
 
         private static string GetFileOwner(string filePath)
@@ -341,7 +360,7 @@ namespace TechBOM
                 {
                     using (var fs = new FileStream(savePath, FileMode.Create, FileAccess.Write))
                     {
-                        _workBook.Write(fs);
+                        _workbook.Write(fs);
                         isSaved = true; // Устанавливаем флаг, если сохранение прошло успешно
                     }
                 }
@@ -373,8 +392,29 @@ namespace TechBOM
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            _saveFilePathFormData = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "formData.txt");
+
             GetHeadParameters();
             LoadFormData();
+            try
+            {
+                _filePathTemplate = GetTemplatePath();
+            }
+            catch (ArgumentException ex)
+            {
+                MessageBox.Show(ex.Message, "ArgumentException", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Close();
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                MessageBox.Show(ex.Message, "DirectoryNotFoundException", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Close();
+            }
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)

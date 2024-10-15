@@ -74,55 +74,62 @@ namespace TechBOM
 
             if (UserRefProps.Count != 0)
             {
-                Name = UserRefProps.Item("BENENNUNG").ValueAsString();
-
-                DrawingNumber = UserRefProps.Item("ZNR").ValueAsString();
-
-                PosNumber = UserRefProps.Item("POS_NR").ValueAsString();
-                _logger.Trace($"Positionsnummer: {PosNumber}");
-
-                Revision = UserRefProps.Item("ZI").ValueAsString();
-                _logger.Trace($"Revision: {Revision}");
-
-                Quantity = count.ToString();
-                _logger.Trace($"Quantity: {Quantity}");
-
-                ItemNumber = UserRefProps.Item("ARTIKEL_NR").ValueAsString();
-                _logger.Trace($"ItemNumber: {ItemNumber}");
-
-                TypeDescription = UserRefProps.Item("TYPENBEZ").ValueAsString();
-                _logger.Trace($"ItemNumber: {TypeDescription}");
-
-                DinIso = UserRefProps.Item("DIN_EN_ISO").ValueAsString();
-                _logger.Trace($"DinIso: {DinIso}");
-
-                MaterialNumber = UserRefProps.Item("MAT_NR").ValueAsString();
-                _logger.Trace($"MaterialNumber: {MaterialNumber}");
-
                 try
                 {
-                    Dimensions = UserRefProps.Item("ZUSCHNITT").ValueAsString();
-                    _logger.Trace($"Dimensions: {Dimensions}");
+                    Name = UserRefProps.Item("BENENNUNG").ValueAsString();
+
+                    DrawingNumber = UserRefProps.Item("ZNR").ValueAsString();
+
+                    PosNumber = UserRefProps.Item("POS_NR").ValueAsString();
+                    _logger.Trace($"Positionsnummer: {PosNumber}");
+
+                    Revision = UserRefProps.Item("ZI").ValueAsString();
+                    _logger.Trace($"Revision: {Revision}");
+
+                    Quantity = count.ToString();
+                    _logger.Trace($"Quantity: {Quantity}");
+
+                    ItemNumber = UserRefProps.Item("ARTIKEL_NR").ValueAsString();
+                    _logger.Trace($"ItemNumber: {ItemNumber}");
+
+                    TypeDescription = UserRefProps.Item("TYPENBEZ").ValueAsString();
+                    _logger.Trace($"ItemNumber: {TypeDescription}");
+
+                    DinIso = UserRefProps.Item("DIN_EN_ISO").ValueAsString();
+                    _logger.Trace($"DinIso: {DinIso}");
+
+                    MaterialNumber = UserRefProps.Item("MAT_NR").ValueAsString();
+                    _logger.Trace($"MaterialNumber: {MaterialNumber}");
+
+                    try
+                    {
+                        Dimensions = UserRefProps.Item("ZUSCHNITT").ValueAsString();
+                        _logger.Trace($"Dimensions: {Dimensions}");
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.Error(e, $"Das Teil mit PosNr: {PosNumber} hat keine ZUSCHNITT Parameter");
+                    }
+
+                    Manufacturerer = UserRefProps.Item("LIEFERANT").ValueAsString();
+                    _logger.Trace($"Manufacturerer: {Manufacturerer}");
+
+                    SapNumber = UserRefProps.Item("SAP_IDENTNR").ValueAsString();
+                    _logger.Trace($"SapNumber: {SapNumber}");
+
+                    AdditionalInfo = UserRefProps.Item("ZUSATZINFO").ValueAsString();
+                    _logger.Trace($"AdditionalInfo: {AdditionalInfo}");
+
+                    Remark = UserRefProps.Item("BEMERKUNG").ValueAsString();
+                    _logger.Trace($"Remark: {Remark}");
+
+                    SparePart = UserRefProps.Item("ERSATZ").ValueAsString();
+                    _logger.Trace($"SparePart: {SparePart}");
                 }
                 catch (Exception e)
                 {
-                    _logger.Error(e, $"Das Teil mit PosNr: {PosNumber} hat keine ZUSCHNITT Parameter");
+                    MessageBox.Show($"User Properties were not found: {e.Message}");
                 }
-
-                Manufacturerer = UserRefProps.Item("LIEFERANT").ValueAsString();
-                _logger.Trace($"Manufacturerer: {Manufacturerer}");
-
-                SapNumber = UserRefProps.Item("SAP_IDENTNR").ValueAsString();
-                _logger.Trace($"SapNumber: {SapNumber}");
-
-                AdditionalInfo = UserRefProps.Item("ZUSATZINFO").ValueAsString();
-                _logger.Trace($"AdditionalInfo: {AdditionalInfo}");
-
-                Remark = UserRefProps.Item("BEMERKUNG").ValueAsString();
-                _logger.Trace($"Remark: {Remark}");
-
-                SparePart = UserRefProps.Item("ERSATZ").ValueAsString();
-                _logger.Trace($"SparePart: {SparePart}");
             }
             else
             {

@@ -6,7 +6,7 @@ namespace TechBOM
     {
         private static Counter _instance;
 
-        public Dictionary<string, int> PartCount { get; private set; } = new Dictionary<string, int>();
+        public Dictionary<string, int> PartCount { get; private set; }
 
         private Counter()
         {
@@ -53,8 +53,7 @@ namespace TechBOM
                 }
             }
 
-            CatiaHelper catiaHelper = new CatiaHelper();
-            catiaHelper.CatHelperReset();
+            CatiaHelper.Instance.CatHelperReset();
 
             Products products = product.Products;
 
@@ -62,7 +61,7 @@ namespace TechBOM
             {
                 Product subProduct = products.Item(i);
 
-                bool isActive = catiaHelper.IsProductActivated(subProduct);
+                bool isActive = CatiaHelper.Instance.IsProductActivated(subProduct);
 
                 string partNumber = subProduct.get_PartNumber();
 

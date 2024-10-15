@@ -6,6 +6,7 @@ namespace TechBOM
     {
         // Статическая переменная, которая будет хранить единственный экземпляр класса
         private static CatiaConnect _instance = new CatiaConnect();
+
         public INFITF.Application Catia { get; set; }
 
         // Закрытый конструктор, чтобы предотвратить создание экземпляра вне класса
