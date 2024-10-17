@@ -25,14 +25,14 @@ namespace TechBOM
         public string Dimensions { get; set; }
         public string Manufacturerer { get; set; }
         public string SapNumber { get; set; }
-        public string AdditionalInfo { get; set; }
+        public string   AdditionalInfo { get; set; }
         public string Remark { get; set; }
         public string SparePart { get; set; }
         public bool IsZsb { get; }
 
         private readonly Document _oDocument;
         private Product _oProduct;
-        private Part _oPart;
+        private Part? _oPart;
 
         public SingleNode(Document oDocument)
         {
@@ -43,6 +43,16 @@ namespace TechBOM
 
         public void GetValuesParameters()
         {
+            //if (_oDocument == null)
+            //{
+            //    _logger.Error("Document is null");
+            //    return;
+            //}
+            //if (_oProduct == null)
+            //{
+            //    _logger.Error("Product is null");
+            //    return;
+            //}
 
             int count = 0;
 
@@ -51,14 +61,13 @@ namespace TechBOM
                 _oPart = oPartDocument.Part;
                 _oProduct = oPartDocument.Product;
                 PartNumber = _oPart.get_Name();
-                //count = Counter.Instance.PartCount[partName];
-                if (Counter.Instance.PartCount.ContainsKey(PartNumber))
+                if (Counter.Instance.PartCount.TryGetValue(PartNumber, out int value))
                 {
-                    count = Counter.Instance.PartCount[PartNumber];
+                    count = value;
                 }
                 else
                 {
-                    count = 0; // Если ключа нет, устанавливаем значение по умолчанию
+                    count = 0;
                 }
 
             }

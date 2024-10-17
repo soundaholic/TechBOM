@@ -17,7 +17,6 @@ namespace TechBOM
         [System.Security.SecurityCritical]  // auto-generated_required
         public static Object GetActiveObject(String progID)
         {
-            Object obj = null;
             Guid clsid;
 
             // Call CLSIDFromProgIDEx first then fall back on CLSIDFromProgID if
@@ -32,7 +31,7 @@ namespace TechBOM
                 CLSIDFromProgID(progID, out clsid);
             }
 
-            GetActiveObject(ref clsid, IntPtr.Zero, out obj);
+            GetActiveObject(ref clsid, IntPtr.Zero, out object obj);
             return obj;
         }
 

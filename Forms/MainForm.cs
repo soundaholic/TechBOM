@@ -6,27 +6,25 @@ using ProductStructureTypeLib;
 using Application = INFITF.Application;
 using System.ComponentModel;
 using Microsoft.Extensions.Configuration;
+using System.IO;
 
 namespace TechBOM
 {
     public partial class MainForm : CustomMetroForm
     {
-        //[DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        //private static extern bool QueryDosDevice(string lpDeviceName, StringBuilder lpTargetPath, int ucchMax);
-        
-        private static readonly Application _catia = CatiaConnect.Instance.ConnectCatia();
+        private static Application _catia = CatiaConnect.Instance.ConnectCatia();
         private static Document _oRootDocument = _catia.ActiveDocument;
         private readonly ExcelHelper _excelHelper = new();
 
         private IWorkbook _workbook;
-        private ISheet? _workSheet;
+        private ISheet _workSheet;
         private string _savePath;
         private string _saveFileName;
         private string _saveFilePathFormData;
         private string _rootPartNumber;
-        private string _filePathTemplate { get; set; }
+        private string _filePathTemplate;
         
-        private readonly List<PartDocument> _productionParts = new List<PartDocument>();
+        private List<PartDocument> _productionParts = [];
 
         //private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
@@ -41,7 +39,7 @@ namespace TechBOM
 
         private string GetTemplatePath()
         {
-            // Создаем конфигурацию для чтения из appsettings.json
+            // create configuration for reading appSettings.json
             var builder = new ConfigurationBuilder()
                 .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
                 .AddJsonFile("appSettings.json", optional: false, reloadOnChange: true);
@@ -82,14 +80,15 @@ namespace TechBOM
             {
                 Counter counter = Counter.Instance;
                 var depth = string.Empty;
-                // Сбрасываем предыдущие результаты перед началом нового подсчета
+
+                //reset the counter
                 counter.Reset();
 
                 _backgroundWorker.ReportProgress(0, "Counting parts...");
 
                 Invoke((MethodInvoker)delegate
                 {
-                    depth = comboBox_ScanDepth.Text; // Получаем текст из ComboBox в потоке UI
+                    depth = comboBox_ScanDepth.Text;
                 });
 
                 counter.CountParts(oProductDoc.Product, 0, depth);
@@ -112,6 +111,16 @@ namespace TechBOM
             _backgroundWorker.ReportProgress(50, "Processing BOM entries...");
             ProcessBomEntry();
 
+            _backgroundWorker.ReportProgress(90, "Adjusting of columns width...");
+            for (int i = 0; i < 500; i++)
+            {
+                _workSheet.AutoSizeColumn(i);
+            }
+            for (int i = 0; i < 500; i++)
+            {
+                _workSheet.AutoSizeRow(i);
+            }
+
             _backgroundWorker.ReportProgress(100, "Saving BOM entries...");
             SaveExcelDocument(_saveFileName);
 
@@ -121,7 +130,7 @@ namespace TechBOM
         private void BackgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             int progress = e.ProgressPercentage;
-            string statusMessage = e.UserState as string;
+            string? statusMessage = e.UserState as string;
 
             lbl_Status.Text = $"{statusMessage} ({progress}%)";
         }
@@ -133,36 +142,36 @@ namespace TechBOM
 
         private void SaveFormData()
         {
-            using (StreamWriter writer = new(_saveFilePathFormData))
-            {
-                writer.WriteLine(textBox_Customer.Text);
-                writer.WriteLine(textBox_Oem.Text);
-                writer.WriteLine(textBox_Project.Text);
-            }
+            using StreamWriter writer = new(_saveFilePathFormData);
+            writer.WriteLine(textBox_Customer.Text);
+            writer.WriteLine(textBox_Oem.Text);
+            writer.WriteLine(textBox_Project.Text);
         }
 
         private void LoadFormData()
         {
             if (System.IO.File.Exists(_saveFilePathFormData))
             {
-                using (StreamReader reader = new(_saveFilePathFormData))
-                {
-                    textBox_Customer.Text = reader.ReadLine();
-                    textBox_Oem.Text = reader.ReadLine();
-                    textBox_Project.Text = reader.ReadLine();
-                }
+                using StreamReader reader = new(_saveFilePathFormData);
+                textBox_Customer.Text = reader.ReadLine();
+                textBox_Oem.Text = reader.ReadLine();
+                textBox_Project.Text = reader.ReadLine();
             }
             comboBox_ScanDepth.SelectedIndex = 5;
         }
 
         private void Button_Start_Click(object sender, EventArgs e)
         {
+            //_savePath = string.Empty;
+            //_rootPartNumber = string.Empty;
+
+            _oRootDocument = _catia.ActiveDocument;
+
+            GetHeadParameters();
+
             InitializeBackgroundWorker();
-
             _productionParts.Clear();
-            
             CatiaHelper.Instance.CatHelperReset();
-
             _saveFileName = Path.Combine( _savePath,$"{_rootPartNumber}.xlsx");
 
             if (System.IO.File.Exists(_saveFileName))
@@ -198,13 +207,10 @@ namespace TechBOM
                 System.IO.File.Copy(_filePathTemplate, _saveFileName, overwrite: true);
             }
             
-
             using (FileStream file = new(_saveFileName, FileMode.Open, FileAccess.ReadWrite))
             {
                 _workbook = new XSSFWorkbook(file); 
             }
-
-            _oRootDocument = _catia.ActiveDocument;
             
             _backgroundWorker.RunWorkerAsync();
         }
@@ -219,7 +225,7 @@ namespace TechBOM
 
             SingleNode singleNode = new(_oRootDocument);
 
-            // Используем Invoke для обновления UI из фонового потока
+            // Use Invoke to update UI controls from a non-UI thread
             Invoke((MethodInvoker)delegate
             {
                 textBox_Name.Text = singleNode.Name;
@@ -235,7 +241,7 @@ namespace TechBOM
 
             if (_oRootDocument is ProductDocument oProductDoc)
             {
-                SingleNode singleNode = new SingleNode(oProductDoc);
+                SingleNode singleNode = new(oProductDoc);
 
                 _workSheet = _workbook.GetSheet("bom");
 
@@ -342,7 +348,14 @@ namespace TechBOM
                 var fileInfo = new FileInfo(filePath);
                 var fileSecurity = fileInfo.GetAccessControl();
                 var identity = fileSecurity.GetOwner(typeof(System.Security.Principal.NTAccount));
-                return identity.ToString();
+                if (identity != null)
+                {
+                    return identity.ToString();
+                }
+                else
+                {
+                    return "Unknown user";
+                }
             }
             catch (Exception)
             {
@@ -352,7 +365,7 @@ namespace TechBOM
 
         private void SaveExcelDocument(string savePath)
         {
-            bool isSaved = false; // Флаг для проверки успешного сохранения
+            bool isSaved = false;
 
             while (!isSaved)
             {
@@ -361,26 +374,23 @@ namespace TechBOM
                     using (var fs = new FileStream(savePath, FileMode.Create, FileAccess.Write))
                     {
                         _workbook.Write(fs);
-                        isSaved = true; // Устанавливаем флаг, если сохранение прошло успешно
+                        isSaved = true;
                     }
                 }
                 catch (IOException)
                 {
-                    // Определение, кто использует файл
                     string owner = GetFileOwner(savePath);
                     DialogResult result = MessageBox.Show($"The file is currently opened by {owner}. Please close the file and try again.", "File in use", MessageBoxButtons.OKCancel);
 
                     if (result == DialogResult.Cancel)
                     {
-                        // Прекращаем попытки сохранения, если пользователь выбрал "Отмена"
                         break;
                     }
                 }
                 catch (Exception ex)
                 {
-                    // Обработка других исключений
                     MessageBox.Show($"An error occurred: {ex.Message}");
-                    break; // Выходим из цикла при возникновении других ошибок
+                    break;
                 }
             }
 
@@ -428,10 +438,9 @@ namespace TechBOM
             comboBox_Language.SelectedIndexChanged += ComboBoxLanguage_SelectedIndexChanged;
         }
 
-        private void ComboBoxLanguage_SelectedIndexChanged(object sender, EventArgs e)
+        private void ComboBoxLanguage_SelectedIndexChanged(object? sender, EventArgs? e)
         {
-            // Меняем текст на лейблах в зависимости от выбранного языка
-            switch (comboBox_Language.SelectedItem.ToString())
+            switch (comboBox_Language.SelectedItem!.ToString())
             {
                 case "English":
                     lbl_Customer.Text = "Customer:";

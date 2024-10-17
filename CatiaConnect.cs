@@ -5,7 +5,7 @@ namespace TechBOM
     public class CatiaConnect
     {
         // Статическая переменная, которая будет хранить единственный экземпляр класса
-        private static CatiaConnect _instance = new CatiaConnect();
+        private static CatiaConnect _instance = new();
 
         public INFITF.Application Catia { get; set; }
 
@@ -44,10 +44,7 @@ namespace TechBOM
 
         private void InitializeCatiaSettings()
         {
-            if (Catia != null)
-            {
-                Catia.DisplayFileAlerts = false;
-            }
+            Catia.DisplayFileAlerts = false;
         }
 
         public bool IsDocumentLoaded()
@@ -55,12 +52,10 @@ namespace TechBOM
             try
             {
                 _ = Instance.Catia.ActiveDocument;
-                //Logger.Info("Trying to get an active document...");
                 return true;
             }
             catch (COMException)
             {
-                //Logger.Info("There is no active CATIA document");
                 return false;
             }
         }
