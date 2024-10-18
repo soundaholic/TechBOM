@@ -4,39 +4,47 @@ namespace TechBOM
 {
     public class Counter
     {
-        private static Counter _instance;
+        private static Counter _instance = new();
 
         public Dictionary<string, int> PartCount { get; private set; }
 
         private Counter()
         {
-            PartCount = new Dictionary<string, int>();
+            PartCount = [];
         }
 
         public static Counter Instance
         {
             get
             {
-                if (_instance == null)
-                {
-                    _instance = new Counter();
-                }
+                _instance ??= new Counter();
                 return _instance;
             }
         }
 
-        // Метод для сброса словаря PartCount
         public void Reset()
         {
             PartCount.Clear();
         }
 
-        public void CountParts(Product product, int currentDepth, string maxDepthStr)
+        public int GetCount(string partNumber)
         {
-            // Если глубина "All", то отключаем проверку максимальной глубины
+            if (PartCount.TryGetValue(partNumber, out int value))
+            {
+                return value;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        public void CountParts(Product oProduct, int currentDepth, string maxDepthStr)
+        {
+            // if the depth is "All", then disable the maximum depth check
             bool unlimitedDepth = maxDepthStr == "All";
 
-            // Если не "All", то пытаемся преобразовать строку в число для ограничения глубины
+            // if not "All", then try to convert the string to a number to limit the depth
             if (!unlimitedDepth)
             {
                 if (!int.TryParse(maxDepthStr, out int maxDepth))
@@ -46,22 +54,22 @@ namespace TechBOM
 
                 maxDepth += 1;
 
-                // Если текущая глубина рекурсии превышает максимальную, прекращаем выполнение
+                // if the current recursion depth exceeds the maximum, stop execution
                 if (currentDepth >= maxDepth)
                 {
                     return;
                 }
             }
 
-            CatiaHelper.Instance.CatHelperReset();
+            CatiaProcessor.Instance.CatHelperReset();
 
-            Products products = product.Products;
+            Products products = oProduct.Products;
 
             for (int i = 1; i <= products.Count; i++)
             {
                 Product subProduct = products.Item(i);
 
-                bool isActive = CatiaHelper.Instance.IsProductActivated(subProduct);
+                bool isActive = CatiaProcessor.Instance.IsProductActivated(subProduct);
 
                 string partNumber = subProduct.get_PartNumber();
 
@@ -76,7 +84,7 @@ namespace TechBOM
                         PartCount[partNumber] = 1;
                     }
 
-                    // Recursive call to count parts in subprojects
+                    // Recursive call to count parts in subproducts
                     if (subProduct.Products.Count > 0)
                     {
                         CountParts(subProduct, currentDepth + 1, maxDepthStr);

@@ -4,18 +4,19 @@ namespace TechBOM
 {
     public class CatiaConnect
     {
-        // Статическая переменная, которая будет хранить единственный экземпляр класса
+        // Static variable that will store the only instance of the class
         private static CatiaConnect _instance = new();
 
         public INFITF.Application Catia { get; set; }
 
-        // Закрытый конструктор, чтобы предотвратить создание экземпляра вне класса
+        // Closed constructor to prevent creating an instance outside the class
         private CatiaConnect()
         {
-            ConnectCatia();
+            Catia = ConnectCatia();
+            InitializeCatiaSettings();
         }
 
-        // Статический метод для доступа к экземпляру
+        // Static method to access the instance
         public static CatiaConnect Instance
         {
             get
@@ -30,11 +31,11 @@ namespace TechBOM
 
         public INFITF.Application ConnectCatia()
         {
+            INFITF.Application catia;
             try
             {
-                Catia = (INFITF.Application)MarshalCore.GetActiveObject("Catia.Application");
-                InitializeCatiaSettings();
-                return Catia;
+                catia = (INFITF.Application)MarshalCore.GetActiveObject("Catia.Application");
+                return catia;
             }
             catch
             {

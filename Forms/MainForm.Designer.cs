@@ -52,12 +52,10 @@
             textBox_Station = new TextBox();
             textBox_Name = new TextBox();
             groupBox_HeadData = new GroupBox();
-            label1 = new Label();
+            lbl_ScanDepth = new Label();
             comboBox_ScanDepth = new ComboBox();
             lbl_Language = new Label();
             comboBox_Language = new ComboBox();
-            radioButton_Bg = new RadioButton();
-            radioButton_Zb = new RadioButton();
             lbl_Status = new Label();
             groupBox_HeadData.SuspendLayout();
             SuspendLayout();
@@ -298,7 +296,7 @@
             // 
             // groupBox_HeadData
             // 
-            groupBox_HeadData.Controls.Add(label1);
+            groupBox_HeadData.Controls.Add(lbl_ScanDepth);
             groupBox_HeadData.Controls.Add(comboBox_ScanDepth);
             groupBox_HeadData.Controls.Add(lbl_Language);
             groupBox_HeadData.Controls.Add(textBox_Name);
@@ -333,16 +331,16 @@
             groupBox_HeadData.Text = "Kopfdaten";
             groupBox_HeadData.Enter += groupBox_HeadData_Enter;
             // 
-            // label1
+            // lbl_ScanDepth
             // 
-            label1.AutoSize = true;
-            label1.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold);
-            label1.Location = new Point(7, 50);
-            label1.Margin = new Padding(4, 0, 4, 0);
-            label1.Name = "label1";
-            label1.Size = new Size(79, 17);
-            label1.TabIndex = 17;
-            label1.Text = "Scan depth:";
+            lbl_ScanDepth.AutoSize = true;
+            lbl_ScanDepth.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold);
+            lbl_ScanDepth.Location = new Point(7, 50);
+            lbl_ScanDepth.Margin = new Padding(4, 0, 4, 0);
+            lbl_ScanDepth.Name = "lbl_ScanDepth";
+            lbl_ScanDepth.Size = new Size(79, 17);
+            lbl_ScanDepth.TabIndex = 17;
+            lbl_ScanDepth.Text = "Scan depth:";
             // 
             // comboBox_ScanDepth
             // 
@@ -377,30 +375,6 @@
             comboBox_Language.Size = new Size(140, 25);
             comboBox_Language.TabIndex = 13;
             // 
-            // radioButton_Bg
-            // 
-            radioButton_Bg.AutoSize = true;
-            radioButton_Bg.Location = new Point(133, 318);
-            radioButton_Bg.Margin = new Padding(4, 3, 4, 3);
-            radioButton_Bg.Name = "radioButton_Bg";
-            radioButton_Bg.Size = new Size(40, 19);
-            radioButton_Bg.TabIndex = 12;
-            radioButton_Bg.Text = "BG";
-            radioButton_Bg.UseVisualStyleBackColor = true;
-            radioButton_Bg.Visible = false;
-            // 
-            // radioButton_Zb
-            // 
-            radioButton_Zb.AutoSize = true;
-            radioButton_Zb.Location = new Point(81, 318);
-            radioButton_Zb.Margin = new Padding(4, 3, 4, 3);
-            radioButton_Zb.Name = "radioButton_Zb";
-            radioButton_Zb.Size = new Size(39, 19);
-            radioButton_Zb.TabIndex = 11;
-            radioButton_Zb.Text = "ZB";
-            radioButton_Zb.UseVisualStyleBackColor = true;
-            radioButton_Zb.Visible = false;
-            // 
             // lbl_Status
             // 
             lbl_Status.AutoSize = true;
@@ -421,10 +395,8 @@
             Controls.Add(lbl_Status);
             Controls.Add(comboBoxProjects);
             Controls.Add(Button_Cancel);
-            Controls.Add(radioButton_Bg);
             Controls.Add(Button_Start);
             Controls.Add(groupBox_HeadData);
-            Controls.Add(radioButton_Zb);
             ImeMode = ImeMode.Disable;
             Margin = new Padding(4, 3, 4, 3);
             Name = "MainForm";
@@ -464,12 +436,10 @@
         private System.Windows.Forms.TextBox textBox_Station;
         private System.Windows.Forms.TextBox textBox_Name;
         private System.Windows.Forms.GroupBox groupBox_HeadData;
-        private System.Windows.Forms.RadioButton radioButton_Bg;
-        private System.Windows.Forms.RadioButton radioButton_Zb;
         private System.Windows.Forms.Label lbl_Status;
         private System.Windows.Forms.Label lbl_Language;
         private System.Windows.Forms.ComboBox comboBox_Language;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label lbl_ScanDepth;
         private System.Windows.Forms.ComboBox comboBox_ScanDepth;
     }
 }

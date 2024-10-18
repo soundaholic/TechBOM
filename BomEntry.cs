@@ -8,6 +8,13 @@ namespace TechBOM
 
         public void FillBomValues(SingleNode singleNode, int rowNumber)
         {
+            List<string> parts = [];
+
+            string finalRemarkValue;
+            string remark = singleNode.Remark;
+            string additionalInfo = singleNode.AdditionalInfo;
+            string dinIso = singleNode.DinIso;
+
             if (singleNode.IsZsb) return;
 
             IRow currentRow = _workSheet.GetRow(13 + rowNumber);
@@ -52,13 +59,6 @@ namespace TechBOM
 
             ICell oCellInfo = currentRow.GetCell(16);
 
-            string finalRemarkValue;
-            string remark = singleNode.Remark;
-            string additionalInfo = singleNode.AdditionalInfo;
-            string dinIso = singleNode.DinIso;
-
-            List<string> parts = new List<string>();
-
             if (!string.IsNullOrWhiteSpace(remark))
             {
                 parts.Add(remark);
@@ -73,7 +73,9 @@ namespace TechBOM
             {
                 parts.Add(dinIso);
             }
+
             finalRemarkValue = string.Join(";", parts);
+
             oCellInfo.SetCellValue(finalRemarkValue);
         }
     }

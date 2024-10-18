@@ -4,34 +4,25 @@ using ProductStructureTypeLib;
 
 namespace TechBOM
 {
-    public class CatiaHelper
+    public class CatiaProcessor
     {
         public List<string> Names { get; set; } = [];
         public List<SingleNode> Nodes { get; set; } = [];
-
+        
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
         
         private bool _isAdapter;
 
-        private static CatiaHelper _instance = new CatiaHelper();
+        private static CatiaProcessor _instance = new();
 
-        private CatiaHelper()
-        {
-            
-        }
-
-        public static CatiaHelper Instance
+        public static CatiaProcessor Instance
         {
             get
             {
-                if (_instance == null)
-                {
-                    _instance = new CatiaHelper();
-                }
+                _instance ??= new CatiaProcessor();
                 return _instance;
             }
         }
-
 
         public void CatHelperReset()
         {
@@ -134,8 +125,6 @@ namespace TechBOM
                 WalkDownTree(oInst, currentDepth + 1, maxDepthStr);
             }
         }
-
-
 
         public bool IsProductActivated(Product instance)
         {

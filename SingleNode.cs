@@ -3,7 +3,6 @@ using INFITF;
 using KnowledgewareTypeLib;
 using MECMOD;
 using ProductStructureTypeLib;
-using System;
 
 namespace TechBOM
 {
@@ -11,74 +10,63 @@ namespace TechBOM
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        public string PartNumber { get; set; }
-        public Parameters UserRefProps { get; set; }
-        public string PosNumber { get; set; }
-        public string Revision { get; set; }
-        public string Quantity { get; set; }
-        public string Name { get; set; }
-        public string DrawingNumber { get; set; }
-        public string ItemNumber { get; set; }
-        public string TypeDescription { get; set; }
-        public string DinIso { get; set; }
-        public string MaterialNumber { get; set; }
-        public string Dimensions { get; set; }
-        public string Manufacturerer { get; set; }
-        public string SapNumber { get; set; }
-        public string   AdditionalInfo { get; set; }
-        public string Remark { get; set; }
-        public string SparePart { get; set; }
+        public string PartNumber { get; set; } = string.Empty;
+        public Parameters UserRefProps { get; set; } = default!;
+        public string PosNumber { get; set; } = string.Empty;
+        public string Revision { get; set; } = string.Empty;
+        public string Quantity { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string DrawingNumber { get; set; } = string.Empty;
+        public string ItemNumber { get; set; } = string.Empty;
+        public string TypeDescription { get; set; } = string.Empty;
+        public string DinIso { get; set; } = string.Empty;
+        public string MaterialNumber { get; set; } = string.Empty;
+        public string Dimensions { get; set; } = string.Empty;
+        public string Manufacturerer { get; set; } = string.Empty;
+        public string SapNumber { get; set; } = string.Empty;
+        public string AdditionalInfo { get; set; } = string.Empty;
+        public string Remark { get; set; } = string.Empty;
+        public string SparePart { get; set; } = string.Empty;
         public bool IsZsb { get; }
 
         private readonly Document _oDocument;
-        private Product _oProduct;
+        private Product _oProduct = default!;
         private Part? _oPart;
 
         public SingleNode(Document oDocument)
         {
             _oDocument = oDocument;
             IsZsb = _oDocument.Application.ActiveDocument.FullName.Equals(_oDocument.FullName);
+            
+            if (oDocument is PartDocument oPartDocument)
+            {
+                _oPart = oPartDocument.Part;
+                _oProduct = oPartDocument.Product;
+                PartNumber = _oProduct.get_PartNumber();
+            }
+            else if (oDocument is ProductDocument oProductDocument)
+            {
+                _oProduct = oProductDocument.Product;
+                PartNumber = _oProduct.get_PartNumber();
+            }
             GetValuesParameters();
         }
 
         public void GetValuesParameters()
         {
-            //if (_oDocument == null)
-            //{
-            //    _logger.Error("Document is null");
-            //    return;
-            //}
-            //if (_oProduct == null)
-            //{
-            //    _logger.Error("Product is null");
-            //    return;
-            //}
-
-            int count = 0;
-
             if (_oDocument is PartDocument oPartDocument)
             {
                 _oPart = oPartDocument.Part;
                 _oProduct = oPartDocument.Product;
-                PartNumber = _oPart.get_Name();
-                if (Counter.Instance.PartCount.TryGetValue(PartNumber, out int value))
-                {
-                    count = value;
-                }
-                else
-                {
-                    count = 0;
-                }
 
             }
             else if (_oDocument is ProductDocument oProductDocument)
             {
                 _oProduct = oProductDocument.Product;
-                PartNumber = _oProduct.get_Name();
-                count = IsZsb ? 1 : Counter.Instance.PartCount[PartNumber];
             }
 
             UserRefProps = _oProduct.UserRefProperties;
+
             _logger.Trace("");
 
             if (UserRefProps.Count != 0)
@@ -95,7 +83,7 @@ namespace TechBOM
                     Revision = UserRefProps.Item("ZI").ValueAsString();
                     _logger.Trace($"Revision: {Revision}");
 
-                    Quantity = count.ToString();
+                    Quantity = Counter.Instance.GetCount(PartNumber).ToString();
                     _logger.Trace($"Quantity: {Quantity}");
 
                     ItemNumber = UserRefProps.Item("ARTIKEL_NR").ValueAsString();
