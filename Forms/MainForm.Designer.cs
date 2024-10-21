@@ -57,13 +57,14 @@
             lbl_Language = new Label();
             comboBox_Language = new ComboBox();
             lbl_Status = new Label();
+            progressBar = new ProgressBar();
             groupBox_HeadData.SuspendLayout();
             SuspendLayout();
             // 
             // Button_Start
             // 
             Button_Start.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold);
-            Button_Start.Location = new Point(544, 314);
+            Button_Start.Location = new Point(545, 355);
             Button_Start.Margin = new Padding(4, 3, 4, 3);
             Button_Start.Name = "Button_Start";
             Button_Start.Size = new Size(104, 30);
@@ -75,7 +76,7 @@
             // Button_Cancel
             // 
             Button_Cancel.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold);
-            Button_Cancel.Location = new Point(667, 314);
+            Button_Cancel.Location = new Point(668, 355);
             Button_Cancel.Margin = new Padding(4, 3, 4, 3);
             Button_Cancel.Name = "Button_Cancel";
             Button_Cancel.Size = new Size(104, 30);
@@ -385,13 +386,23 @@
             lbl_Status.Size = new Size(0, 25);
             lbl_Status.TabIndex = 15;
             // 
+            // progressBar
+            // 
+            progressBar.Location = new Point(31, 355);
+            progressBar.Name = "progressBar";
+            progressBar.Size = new Size(460, 30);
+            progressBar.Step = 5;
+            progressBar.Style = ProgressBarStyle.Continuous;
+            progressBar.TabIndex = 16;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(255, 255, 255);
             BackgroundImageLayout = ImageLayout.None;
-            ClientSize = new Size(791, 355);
+            ClientSize = new Size(791, 402);
+            Controls.Add(progressBar);
             Controls.Add(lbl_Status);
             Controls.Add(comboBoxProjects);
             Controls.Add(Button_Cancel);
@@ -441,6 +452,7 @@
         private System.Windows.Forms.ComboBox comboBox_Language;
         private System.Windows.Forms.Label lbl_ScanDepth;
         private System.Windows.Forms.ComboBox comboBox_ScanDepth;
+        private ProgressBar progressBar;
     }
 }
 

@@ -27,65 +27,6 @@ namespace TechBOM
             ComboBoxLanguage_SelectedIndexChanged(null, null);
             _rootNode = new RootNode();
             _excelProcessor = new ExcelProcessor(_rootNode);
-            _backgroundWorker = new BackgroundWorker
-            {
-                WorkerReportsProgress = true
-            };
-
-            _backgroundWorker.DoWork += BackgroundWorker_DoWork;
-            _backgroundWorker.ProgressChanged += BackgroundWorker_ProgressChanged;
-            _backgroundWorker.RunWorkerCompleted += BackgroundWorker_RunWorkerCompleted;
-        }
-
-        private void BackgroundWorker_DoWork(object sender, DoWorkEventArgs e)
-        {
-            Counter counter = Counter.Instance;
-
-            ProductDocument productDoc = (ProductDocument)_rootNode.ActiveDoc;
-            Product product = productDoc.Product;
-
-            _backgroundWorker.ReportProgress(0);
-
-            _backgroundWorker.ReportProgress(10, "Getting head parameters...");
-            RefreshFormData();
-
-            _backgroundWorker.ReportProgress(20, "Filling head data...");
-            FillExcelHeadData();
-
-            _backgroundWorker.ReportProgress(30, "Counting parts...");
-            Invoke((MethodInvoker)delegate
-            {
-                counter.CountParts(product, 0, comboBox_ScanDepth.Text);
-            });
-
-            _backgroundWorker.ReportProgress(50, "Processing BOM entries...");
-            ProcessBomEntry();
-
-            _backgroundWorker.ReportProgress(90, "Adjusting of columns width...");
-            for (int i = 0; i < 500; i++)
-            {
-                _excelProcessor.WorkSheet.AutoSizeColumn(i);
-            }
-            for (int i = 0; i < 500; i++)
-            {
-                _excelProcessor.WorkSheet.AutoSizeRow(i);
-            }
-
-            _backgroundWorker.ReportProgress(100, "Saving BOM entries...");
-            _excelProcessor.SaveExcelDocument(_rootNode.SaveFileName);
-            _excelProcessor.OpenFile(_rootNode.SaveFileName);
-        }
-
-        private void BackgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            int progress = e.ProgressPercentage;
-            string? statusMessage = e.UserState as string;
-            lbl_Status.Text = $"{statusMessage} ({progress}%)";
-        }
-
-        private void BackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            lbl_Status.Text = "Done!";
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -128,18 +69,17 @@ namespace TechBOM
             }
         }
 
-        private void Button_Start_Click(object sender, EventArgs e)
+        private async void Button_Start_Click(object sender, EventArgs e)
         {
             _rootNode = new();
             _excelProcessor = new(_rootNode);
-
             Counter.Instance.Reset();
             _rootNode = new RootNode();
             RefreshFormData();
             _productionParts.Clear();
             CatiaProcessor.Instance.CatHelperReset();
 
-            if (System.IO.File.Exists(_rootNode.SaveFileName))
+            if (File.Exists(_rootNode.SaveFileName))
             {
                 DialogResult result = MessageBox.Show("File already exists. Do you want to overwrite it?", "File exists", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 
@@ -151,7 +91,7 @@ namespace TechBOM
                     {
                         try
                         {
-                            System.IO.File.Copy(_excelProcessor.TemplateFilePath, _rootNode.SaveFileName, overwrite: true);
+                            File.Copy(_excelProcessor.TemplateFilePath, _rootNode.SaveFileName, overwrite: true);
                             isSaved = true;
                         }
                         catch (IOException)
@@ -169,10 +109,78 @@ namespace TechBOM
             }
             else
             {
-                System.IO.File.Copy(_excelProcessor.TemplateFilePath, _rootNode.SaveFileName, overwrite: true);
+                File.Copy(_excelProcessor.TemplateFilePath, _rootNode.SaveFileName, overwrite: true);
             }
 
-            _backgroundWorker.RunWorkerAsync();
+            // Initialize Progress reporting
+            var progress = new Progress<(int, string)>(ReportProgress);
+
+            // Start the asynchronous process
+            await RunBomProcessingAsync(progress);
+        }
+
+        
+
+        private async Task RunBomProcessingAsync(IProgress<(int, string)> progress)
+        {
+            try
+            {
+                progress.Report((0, "Starting BOM processing..."));
+
+                await Task.Run(() =>
+                {
+                    var productDoc = (ProductDocument)_rootNode.ActiveDoc;
+                    var product = productDoc.Product;
+
+                    // Step 1: Refresh form data
+                    progress.Report((10, "Refreshing form data..."));
+                    RefreshFormData();
+
+                    // Step 2: Fill head data in Excel
+                    progress.Report((20, "Filling head data..."));
+                    FillExcelHeadData();
+
+                    // Step 3: Count parts asynchronously
+                    progress.Report((30, "Counting parts..."));
+                    Invoke((MethodInvoker)(() =>
+                    {
+                        Counter.Instance.CountParts(product, 0, comboBox_ScanDepth.Text);
+                    }));
+
+                    // Step 4: Process BOM entries asynchronously
+                    progress.Report((50, "Processing BOM entries..."));
+                    ProcessBomEntry();
+
+                    // Step 5: Adjust column width
+                    progress.Report((90, "Adjusting column width..."));
+                    for (int i = 0; i < 500; i++)
+                    {
+                        _excelProcessor.WorkSheet.AutoSizeColumn(i);
+                    }
+
+                    for (int i = 0; i < 500; i++)
+                    {
+                        _excelProcessor.WorkSheet.AutoSizeRow(i);
+                    }
+
+                    // Step 6: Save the Excel file
+                    progress.Report((95, "Saving Excel document..."));
+                    _excelProcessor.SaveExcelDocument(_rootNode.SaveFileName);
+                });
+
+                // After task completion, open the saved file
+                progress.Report((100, "Opening Excel file..."));
+                _excelProcessor.OpenFile(_rootNode.SaveFileName);
+
+                // UI Update: Completed
+                lbl_Status.Text = "Done!";
+            }
+            catch (Exception ex)
+            {
+                // Handle errors
+                lbl_Status.Text = $"Error: {ex.Message}";
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void FillExcelHeadData()
@@ -234,9 +242,6 @@ namespace TechBOM
                 {
                     bomEntry.FillBomValues(node, i);
                     i++;
-
-                    int progress = 40 + (i * 50 / totalNodes);
-                    _backgroundWorker.ReportProgress(progress);
                 }
             }
         }
@@ -319,7 +324,7 @@ namespace TechBOM
 
         private void LoadFormData()
         {
-            if (System.IO.File.Exists(_saveFilePathFormData))
+            if (File.Exists(_saveFilePathFormData))
             {
                 using StreamReader reader = new(_saveFilePathFormData);
                 textBox_Customer.Text = reader.ReadLine();
@@ -331,5 +336,13 @@ namespace TechBOM
             }
             comboBox_ScanDepth.SelectedIndex = 5;
         }
+
+        private void ReportProgress((int, string) progressData)
+        {
+            var (percent, message) = progressData;
+            lbl_Status.Text = $"{message} ({percent}%)";
+            progressBar.Value = percent;
+        }
+
     }
 }
