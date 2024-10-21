@@ -8,7 +8,7 @@ namespace TechBOM
 {
     public class SingleNode
     {
-        private readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        private Logger _logger = LogManager.GetCurrentClassLogger();
 
         public string PartNumber { get; set; } = string.Empty;
         public Parameters UserRefProps { get; set; } = default!;
@@ -67,41 +67,23 @@ namespace TechBOM
 
             UserRefProps = _oProduct.UserRefProperties;
 
-            _logger.Trace("");
-
             if (UserRefProps.Count != 0)
             {
                 try
                 {
                     Name = UserRefProps.Item("BENENNUNG").ValueAsString();
-
                     DrawingNumber = UserRefProps.Item("ZNR").ValueAsString();
-
                     PosNumber = UserRefProps.Item("POS_NR").ValueAsString();
-                    _logger.Trace($"Positionsnummer: {PosNumber}");
-
                     Revision = UserRefProps.Item("ZI").ValueAsString();
-                    _logger.Trace($"Revision: {Revision}");
-
                     Quantity = Counter.Instance.GetCount(PartNumber).ToString();
-                    _logger.Trace($"Quantity: {Quantity}");
-
                     ItemNumber = UserRefProps.Item("ARTIKEL_NR").ValueAsString();
-                    _logger.Trace($"ItemNumber: {ItemNumber}");
-
                     TypeDescription = UserRefProps.Item("TYPENBEZ").ValueAsString();
-                    _logger.Trace($"ItemNumber: {TypeDescription}");
-
                     DinIso = UserRefProps.Item("DIN_EN_ISO").ValueAsString();
-                    _logger.Trace($"DinIso: {DinIso}");
-
                     MaterialNumber = UserRefProps.Item("MAT_NR").ValueAsString();
-                    _logger.Trace($"MaterialNumber: {MaterialNumber}");
 
                     try
                     {
                         Dimensions = UserRefProps.Item("ZUSCHNITT").ValueAsString();
-                        _logger.Trace($"Dimensions: {Dimensions}");
                     }
                     catch (Exception e)
                     {
@@ -109,19 +91,10 @@ namespace TechBOM
                     }
 
                     Manufacturerer = UserRefProps.Item("LIEFERANT").ValueAsString();
-                    _logger.Trace($"Manufacturerer: {Manufacturerer}");
-
                     SapNumber = UserRefProps.Item("SAP_IDENTNR").ValueAsString();
-                    _logger.Trace($"SapNumber: {SapNumber}");
-
                     AdditionalInfo = UserRefProps.Item("ZUSATZINFO").ValueAsString();
-                    _logger.Trace($"AdditionalInfo: {AdditionalInfo}");
-
                     Remark = UserRefProps.Item("BEMERKUNG").ValueAsString();
-                    _logger.Trace($"Remark: {Remark}");
-
                     SparePart = UserRefProps.Item("ERSATZ").ValueAsString();
-                    _logger.Trace($"SparePart: {SparePart}");
                 }
                 catch (Exception e)
                 {

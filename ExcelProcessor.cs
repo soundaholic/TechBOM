@@ -11,9 +11,7 @@ namespace TechBOM
     {
         private string _saveFileName;
         private RootNode _rootNode;
-
         public string TemplateFilePath { get; private set; }
-
         public IWorkbook WorkBook { get; private set; }
         public ISheet WorkSheet { get; private set; }
 

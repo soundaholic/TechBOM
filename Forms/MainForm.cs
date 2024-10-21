@@ -1,9 +1,9 @@
-﻿using INFITF;
-using MECMOD;
+﻿using MECMOD;
 using ProductStructureTypeLib;
 using Application = INFITF.Application;
 using System.ComponentModel;
 using System.IO;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace TechBOM
 {
@@ -11,15 +11,11 @@ namespace TechBOM
     {
         private RootNode _rootNode;
         private ExcelProcessor _excelProcessor;
-        
-        private static Application _catia = CatiaConnect.Instance.ConnectCatia();
-        private static Document? _oRootDocument;
-
+        private Application _catia = CatiaConnect.Instance.ConnectCatia();
         private string _saveFilePathFormData = string.Empty;
         private string _TemplateFilePath = string.Empty;
-        
         private List<PartDocument> _productionParts = [];
-
+        
         //private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         private BackgroundWorker _backgroundWorker;
@@ -29,7 +25,6 @@ namespace TechBOM
             InitializeComponent();
             InitializeLanguageComboBox();
             ComboBoxLanguage_SelectedIndexChanged(null, null);
-
             _rootNode = new RootNode();
             _excelProcessor = new ExcelProcessor(_rootNode);
             _backgroundWorker = new BackgroundWorker
@@ -46,7 +41,7 @@ namespace TechBOM
         {
             Counter counter = Counter.Instance;
 
-            ProductDocument productDoc = (ProductDocument)_oRootDocument;
+            ProductDocument productDoc = (ProductDocument)_rootNode.ActiveDoc;
             Product product = productDoc.Product;
 
             _backgroundWorker.ReportProgress(0);
@@ -95,9 +90,7 @@ namespace TechBOM
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            _oRootDocument = _catia.ActiveDocument;
-
-            if (_oRootDocument is ProductDocument)
+            if (_rootNode.ActiveDoc is ProductDocument)
             {
                 _rootNode = new();
                 _excelProcessor = new(_rootNode);
@@ -139,8 +132,6 @@ namespace TechBOM
         {
             _rootNode = new();
             _excelProcessor = new(_rootNode);
-
-            _oRootDocument = _catia.ActiveDocument;
 
             Counter.Instance.Reset();
             _rootNode = new RootNode();
@@ -186,7 +177,7 @@ namespace TechBOM
 
         private void FillExcelHeadData()
         {
-            if (_oRootDocument is ProductDocument oProductDoc)
+            if (_rootNode.ActiveDoc is ProductDocument oProductDoc)
             {
                 SingleNode singleNode = new(oProductDoc);
 
@@ -206,7 +197,7 @@ namespace TechBOM
                     _excelProcessor.FillExcelHeadData(singleNode, headData, _productionParts);
                 });
             }
-            else if (_oRootDocument is PartDocument oPartDoc)
+            else if (_rootNode.ActiveDoc is PartDocument oPartDoc)
             {
                 _productionParts.Add(oPartDoc);
             }
@@ -216,7 +207,7 @@ namespace TechBOM
         {
             CatiaProcessor.Instance.CatHelperReset();
 
-            if (_oRootDocument is ProductDocument oProductDoc)
+            if (_rootNode.ActiveDoc is ProductDocument oProductDoc)
             {
                 Product oRootProd = oProductDoc.Product;
                 var bomEntry = new BomEntry(_excelProcessor.WorkSheet);
@@ -257,7 +248,7 @@ namespace TechBOM
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (_oRootDocument is ProductDocument oProductDoc)
+            if (_rootNode.ActiveDoc is ProductDocument oProductDoc)
             {
                 SaveFormData();
             }

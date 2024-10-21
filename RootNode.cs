@@ -1,5 +1,4 @@
 ﻿using INFITF;
-using NPOI.OpenXmlFormats.Wordprocessing;
 using ProductStructureTypeLib;
 using System.IO;
 using Application = INFITF.Application;
@@ -8,7 +7,8 @@ namespace TechBOM
 {
     public class RootNode
     {
-        private Document _oDocument;
+        public Document ActiveDoc { get; set; } 
+
         private static Application _catia = CatiaConnect.Instance.ConnectCatia();
 
         public string SaveFileName { get; set; }
@@ -21,21 +21,20 @@ namespace TechBOM
 
         public RootNode()
         {
-            _oDocument = _catia.ActiveDocument;
+            ActiveDoc = _catia.ActiveDocument;
             GetHeadParameters();
-
             SaveFileName = Path.Combine(SavePath, $"{RootPartNumber}.xlsx");
         }
 
         private void GetHeadParameters()
         {
-            if (_oDocument is ProductDocument oProductDoc)
+            if (ActiveDoc is ProductDocument oProductDoc)
             {
                 SavePath = oProductDoc.Path;
                 RootPartNumber = oProductDoc.Product.get_Name();
             }
 
-            SingleNode singleNode = new(_oDocument);
+            SingleNode singleNode = new(ActiveDoc);
 
             NameForTextBox = singleNode.Name;
             DrawingNumberForTextBox = singleNode.DrawingNumber;
