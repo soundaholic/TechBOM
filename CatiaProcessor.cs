@@ -1,6 +1,7 @@
 ﻿using INFITF;
 using NLog;
 using ProductStructureTypeLib;
+using TechBOM.SingleNodeDomain;
 
 namespace TechBOM
 {
@@ -32,6 +33,20 @@ namespace TechBOM
 
         public void WalkDownTree(Product oInProduct, int currentDepth, string maxDepthStr)
         {
+            NodeValidator nodeValidator = new();
+
+            Document oDoc = (Document)oInProduct.ReferenceProduct.Parent;
+
+            SingleNode singleNode = new(oDoc);
+
+            bool isActive = true;
+            bool isAdapter = nodeValidator.IsAdapter(singleNode);
+            bool isNameUnique = !Names.Contains(singleNode.Data.DrawingNumber) || !Names.Contains(singleNode.Data.PosNumber);
+            bool isNotZsb = !singleNode.IsZsb;
+            bool isVariablePosNumber = singleNode.Data.PosNumber == "XXXXX";
+            bool isNotComponent = !nodeValidator.IsComponent(oInProduct);
+            bool isAspPart = singleNode.Data.PosNumber == "00000";
+            
             bool unlimitedDepth = maxDepthStr == "All";
 
             if (!unlimitedDepth)
@@ -51,12 +66,9 @@ namespace TechBOM
 
             Products cInstances = oInProduct.Products;
             
-            bool isActive = true;
             string posNumberFromPartname = string.Empty;
 
-            Document oDoc = (Document)oInProduct.ReferenceProduct.Parent;
-
-            if (!IsComponent(oInProduct))
+            if (isNotComponent)
             {
                 string partNumber = oInProduct.get_PartNumber();
 
@@ -74,38 +86,42 @@ namespace TechBOM
                 string partName = oInProduct.get_PartNumber();
             }
 
-            SingleNode singleNode = new(oDoc);
+            bool isNotUBPart = !posNumberFromPartname.Contains("UB");
+            bool canAddNode = isNameUnique && isNotZsb && isNotUBPart && isActive && !isVariablePosNumber && !isAdapter && isNotComponent && !isAspPart;
 
             try
             {
-                isActive = IsProductActivated(oInProduct);
+                string partNumber = oInProduct.get_PartNumber();
+                isActive = nodeValidator.IsActive(oInProduct);
+
+                if (isActive)
+                {
+                    _logger.Info($"Product {partNumber} is active.");
+                }
+                else
+                {
+                    _logger.Warn($"Product {partNumber} is not active.");
+                }
             }
-            catch
+            catch 
             {
+                _logger.Info($"Unable to retrieve the activity status of Product {singleNode.Data.Name}");
             }
-
-            bool isNameUnique = !Names.Contains(singleNode.DrawingNumber) || !Names.Contains(singleNode.PosNumber);
-            bool isNotZsb = !singleNode.IsZsb;
-            bool isNotUBPart = !posNumberFromPartname.Contains("UB");
-            bool isVariablePosNumber = singleNode.PosNumber == "XXXXX";
-            bool isNotComponent = !IsComponent(oInProduct);
-            bool isAspPart = singleNode.PosNumber == "00000";
-
-            bool canAddNode = isNameUnique && isNotZsb && isNotUBPart && isActive && !isVariablePosNumber && !_isAdapter && isNotComponent && !isAspPart;
-
+            
+            
             if (canAddNode)
             {
                 Nodes.Add(singleNode);
-                Names.Add(singleNode.DrawingNumber);
-                Names.Add(singleNode.PosNumber);
+                Names.Add(singleNode.Data.DrawingNumber);
+                Names.Add(singleNode.Data.PosNumber);
             }
 
             if (isVariablePosNumber)
             {
-                if (!Names.Contains(singleNode.Name))
+                if (!Names.Contains(singleNode.Data.Name))
                 {
                     Nodes.Add(singleNode);
-                    Names.Add(singleNode.Name);
+                    Names.Add(singleNode.Data.Name);
                 }
             }
 
@@ -113,45 +129,16 @@ namespace TechBOM
             {
                 Product oInst = cInstances.Item(i);
                 SingleNode singleNodeInstance = new((Document)oInst.ReferenceProduct.Parent);
-                _isAdapter = singleNodeInstance.Name == "ADAPTER";
 
-                if (_isAdapter)
+                isAdapter = nodeValidator.IsAdapter(singleNodeInstance);
+
+                if (isAdapter)
                 {
                     continue;
                 }
 
                 oInst.ApplyWorkMode(CatWorkModeType.DESIGN_MODE);
-
                 WalkDownTree(oInst, currentDepth + 1, maxDepthStr);
-            }
-        }
-
-        public bool IsProductActivated(Product instance)
-        {
-            //crashed wenn instance is root product
-            return instance.Parameters.Item(((Product)instance.Parent).get_PartNumber() + "\\" + instance.get_Name() + "\\Component Activation State").ValueAsString() == "true";
-        }
-
-        private bool IsComponent(object docListItem)
-        {
-            try
-            {
-                Product product = (Product)docListItem;
-                Reference docRef = (Reference)docListItem;
-                ProductDocument productDoc = (ProductDocument)product.ReferenceProduct.Parent;
-
-                if (product.get_PartNumber() != productDoc.Product.get_PartNumber())
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            catch
-            {
-                return false;
             }
         }
     }

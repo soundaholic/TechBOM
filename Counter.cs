@@ -1,16 +1,25 @@
-﻿using ProductStructureTypeLib;
+﻿using NLog;
+using ProductStructureTypeLib;
+using System.Collections.Concurrent;
+using TechBOM.Interfaces;
+using TechBOM.SingleNodeDomain;
 
 namespace TechBOM
 {
-    public class Counter
+    public class Counter : ICounter
     {
+        Logger _logger = LogManager.GetCurrentClassLogger();
+
         private static Counter _instance = new();
 
-        public Dictionary<string, int> PartCount { get; private set; }
+        // Use ConcurrentDictionary to make it thread-safe
+        public ConcurrentDictionary<string, int> PartCount { get; private set; }
 
-        private Counter()
+        //public Dictionary<string, int> PartCount { get; private set; }
+
+        public Counter()
         {
-            PartCount = [];
+            PartCount = new ConcurrentDictionary<string, int>();  // Initialize with a new Dictionary
         }
 
         public static Counter Instance
@@ -41,6 +50,8 @@ namespace TechBOM
 
         public void CountParts(Product oProduct, int currentDepth, string maxDepthStr)
         {
+            NodeValidator nodeValidator = new();
+
             // if the depth is "All", then disable the maximum depth check
             bool unlimitedDepth = maxDepthStr == "All";
 
@@ -69,26 +80,25 @@ namespace TechBOM
             {
                 Product subProduct = products.Item(i);
 
-                bool isActive = CatiaProcessor.Instance.IsProductActivated(subProduct);
+                bool isActive = nodeValidator.IsActive(subProduct);
 
                 string partNumber = subProduct.get_PartNumber();
 
                 if (isActive)
                 {
-                    if (PartCount.ContainsKey(partNumber))
-                    {
-                        PartCount[partNumber]++;
-                    }
-                    else
-                    {
-                        PartCount[partNumber] = 1;
-                    }
+                    // Use AddOrUpdate to handle thread-safe incrementing of parts
+                    PartCount.AddOrUpdate(partNumber, 1, (key, oldValue) => oldValue + 1);
 
                     // Recursive call to count parts in subproducts
                     if (subProduct.Products.Count > 0)
                     {
                         CountParts(subProduct, currentDepth + 1, maxDepthStr);
                     }
+                }
+                else
+                {
+                    // If the product is not active, log a warning
+                    _logger.Warn($"Product {partNumber} is not active.");
                 }
             }
         }

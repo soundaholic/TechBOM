@@ -1,8 +1,9 @@
 ﻿using System.Runtime.InteropServices;
+using TechBOM.Interfaces;
 
 namespace TechBOM
 {
-    public class CatiaConnect
+    public class CatiaConnect : ICatiaConnect
     {
         // Static variable that will store the only instance of the class
         private static CatiaConnect _instance = new();
@@ -10,24 +11,14 @@ namespace TechBOM
         public INFITF.Application Catia { get; set; }
 
         // Closed constructor to prevent creating an instance outside the class
-        private CatiaConnect()
+        public CatiaConnect()
         {
             Catia = ConnectCatia();
             InitializeCatiaSettings();
         }
 
         // Static method to access the instance
-        public static CatiaConnect Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    _instance = new CatiaConnect();
-                }
-                return _instance;
-            }
-        }
+        public static CatiaConnect Instance => _instance ??= new CatiaConnect();
 
         public INFITF.Application ConnectCatia()
         {

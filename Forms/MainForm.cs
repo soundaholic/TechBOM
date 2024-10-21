@@ -1,16 +1,22 @@
 ﻿using MECMOD;
 using ProductStructureTypeLib;
 using Application = INFITF.Application;
-using System.ComponentModel;
 using System.IO;
-using Microsoft.Extensions.DependencyInjection;
+using TechBOM.Interfaces;
+using TechBOM.SingleNodeDomain;
 
 namespace TechBOM
 {
     public partial class MainForm : CustomMetroForm
     {
-        private RootNode _rootNode;
-        private ExcelProcessor _excelProcessor;
+        private readonly ICatiaConnect _catiaConnect;
+        private readonly ICounter _counter;
+        private readonly Func<RootNode> _rootNodeFactory;  // Factory for RootNode
+        private readonly Func<ExcelProcessor> _excelProcessorFactory;  // Factory for ExcelProcessor
+
+        private RootNode _rootNode;  // Store the current RootNode instance
+        private ExcelProcessor _excelProcessor;  // Store the current ExcelProcessor instance
+
         private Application _catia = CatiaConnect.Instance.ConnectCatia();
         private string _saveFilePathFormData = string.Empty;
         private string _TemplateFilePath = string.Empty;
@@ -18,23 +24,26 @@ namespace TechBOM
         
         //private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        private BackgroundWorker _backgroundWorker;
-
-        public MainForm()
+        public MainForm(ICatiaConnect catiaConnect, Func<ExcelProcessor> excelProcessorFactory, ICounter counter, Func<RootNode> rootNodeFactory)
         {
+            _catiaConnect = catiaConnect;
+            _excelProcessorFactory = excelProcessorFactory;  // Injected factory
+            _counter = counter;
+            _rootNodeFactory = rootNodeFactory;
+
+            // Initialize the first RootNode and ExcelProcessor instance
+            _rootNode = _rootNodeFactory();
+            _excelProcessor = _excelProcessorFactory();  // Initialize the first ExcelProcessor
+
             InitializeComponent();
             InitializeLanguageComboBox();
             ComboBoxLanguage_SelectedIndexChanged(null, null);
-            _rootNode = new RootNode();
-            _excelProcessor = new ExcelProcessor(_rootNode);
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
             if (_rootNode.ActiveDoc is ProductDocument)
             {
-                _rootNode = new();
-                _excelProcessor = new(_rootNode);
                 _saveFilePathFormData = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "formData.txt");
 
                 RefreshFormData();
@@ -71,10 +80,12 @@ namespace TechBOM
 
         private async void Button_Start_Click(object sender, EventArgs e)
         {
-            _rootNode = new();
-            _excelProcessor = new(_rootNode);
-            Counter.Instance.Reset();
-            _rootNode = new RootNode();
+            // Reset the Counter
+            Counter.Instance.Reset();  // Ensure the counter is reset at the start
+
+            _rootNode = _rootNodeFactory();  // Create a new RootNode instance
+            _excelProcessor = _excelProcessorFactory();  // Create a new ExcelProcessor instance
+
             RefreshFormData();
             _productionParts.Clear();
             CatiaProcessor.Instance.CatHelperReset();
@@ -119,8 +130,6 @@ namespace TechBOM
             await RunBomProcessingAsync(progress);
         }
 
-        
-
         private async Task RunBomProcessingAsync(IProgress<(int, string)> progress)
         {
             try
@@ -144,6 +153,7 @@ namespace TechBOM
                     progress.Report((30, "Counting parts..."));
                     Invoke((MethodInvoker)(() =>
                     {
+                        _counter.Reset();
                         Counter.Instance.CountParts(product, 0, comboBox_ScanDepth.Text);
                     }));
 
@@ -231,7 +241,7 @@ namespace TechBOM
 
                 // Order by PosNumber
                 var orderedNodes = from s in CatiaProcessor.Instance.Nodes
-                                   orderby s.PosNumber ascending
+                                   orderby s.Data.PosNumber ascending
                                    select s;
                 CatiaProcessor.Instance.Nodes = orderedNodes.ToList();
 

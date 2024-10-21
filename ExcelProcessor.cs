@@ -4,13 +4,15 @@ using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using System.IO;
 using MECMOD;
+using TechBOM.SingleNodeDomain;
 
-namespace TechBOM 
+namespace TechBOM
 {
     public class ExcelProcessor
     {
         private string _saveFileName;
         private RootNode _rootNode;
+
         public string TemplateFilePath { get; private set; }
         public IWorkbook WorkBook { get; private set; }
         public ISheet WorkSheet { get; private set; }
@@ -34,11 +36,11 @@ namespace TechBOM
             {
                 IRow oRowPartNumber = workSheet.GetRow(5);
                 ICell oCellPartNumber = oRowPartNumber.GetCell(7);
-                oCellPartNumber.SetCellValue(singleNode.Name);
+                oCellPartNumber.SetCellValue(singleNode.Data.Name);
 
                 IRow oRootOrderNumber = workSheet.GetRow(6);
                 ICell oCellRootOrderNumber = oRootOrderNumber.GetCell(7);
-                oCellRootOrderNumber.SetCellValue(singleNode.DrawingNumber);
+                oCellRootOrderNumber.SetCellValue(singleNode.Data.DrawingNumber);
 
                 IRow oRowCustomer = workSheet.GetRow(2);
                 ICell oCellCustomer = oRowCustomer.GetCell(3);

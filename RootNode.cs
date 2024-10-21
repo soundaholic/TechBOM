@@ -1,6 +1,7 @@
 ﻿using INFITF;
 using ProductStructureTypeLib;
 using System.IO;
+using TechBOM.SingleNodeDomain;
 using Application = INFITF.Application;
 
 namespace TechBOM
@@ -36,9 +37,9 @@ namespace TechBOM
 
             SingleNode singleNode = new(ActiveDoc);
 
-            NameForTextBox = singleNode.Name;
-            DrawingNumberForTextBox = singleNode.DrawingNumber;
-            VersionForTextBox = singleNode.Revision;
+            NameForTextBox = singleNode.Data.Name;
+            DrawingNumberForTextBox = singleNode.Data.DrawingNumber;
+            VersionForTextBox = singleNode.Data.Revision;
         }
 
     }

@@ -1,4 +1,5 @@
 ﻿using NPOI.SS.UserModel;
+using TechBOM.SingleNodeDomain;
 
 namespace TechBOM
 {
@@ -11,51 +12,51 @@ namespace TechBOM
             List<string> parts = [];
 
             string finalRemarkValue;
-            string remark = singleNode.Remark;
-            string additionalInfo = singleNode.AdditionalInfo;
-            string dinIso = singleNode.DinIso;
+            string remark = singleNode.Data.Remark;
+            string additionalInfo = singleNode.Data.AdditionalInfo;
+            string dinIso = singleNode.Data.DinIso;
 
             if (singleNode.IsZsb) return;
 
             IRow currentRow = _workSheet.GetRow(13 + rowNumber);
 
             ICell oCellPosNumber = currentRow.GetCell(0);
-            oCellPosNumber.SetCellValue(singleNode.PosNumber);
+            oCellPosNumber.SetCellValue(singleNode.Data.PosNumber);
 
             ICell oCellRevision = currentRow.GetCell(1);
-            oCellRevision.SetCellValue(singleNode.Revision);
+            oCellRevision.SetCellValue(singleNode.Data.Revision);
 
             ICell oCellQuantity = currentRow.GetCell(2);
-            oCellQuantity.SetCellValue(singleNode.Quantity);
+            oCellQuantity.SetCellValue(singleNode.Data.Quantity);
 
             ICell oCellName = currentRow.GetCell(4);
-            oCellName.SetCellValue(singleNode.Name);
+            oCellName.SetCellValue(singleNode.Data.Name);
 
             ICell oCellOrderNumber = currentRow.GetCell(6);
-            oCellOrderNumber.SetCellValue(singleNode.DrawingNumber);
+            oCellOrderNumber.SetCellValue(singleNode.Data.DrawingNumber);
 
-            if (string.IsNullOrWhiteSpace(singleNode.DrawingNumber))
+            if (string.IsNullOrWhiteSpace(singleNode.Data.DrawingNumber))
             {
-                oCellOrderNumber.SetCellValue(singleNode.TypeDescription);
+                oCellOrderNumber.SetCellValue(singleNode.Data.TypeDescription);
             }
 
             ICell oCellItemNumber = currentRow.GetCell(8);
-            oCellItemNumber.SetCellValue(singleNode.ItemNumber);
+            oCellItemNumber.SetCellValue(singleNode.Data.ItemNumber);
 
             ICell oCellMaterial = currentRow.GetCell(10);
-            oCellMaterial.SetCellValue(singleNode.MaterialNumber);
+            oCellMaterial.SetCellValue(singleNode.Data.MaterialNumber);
 
             ICell oCelldimensions = currentRow.GetCell(11);
-            oCelldimensions.SetCellValue(singleNode.Dimensions);
+            oCelldimensions.SetCellValue(singleNode.Data.Dimensions);
 
             ICell oCellSupplier = currentRow.GetCell(5);
-            oCellSupplier.SetCellValue(singleNode.Manufacturerer);
+            oCellSupplier.SetCellValue(singleNode.Data.Manufacturerer);
 
             ICell oCellSapNumber = currentRow.GetCell(9);
-            oCellSapNumber.SetCellValue(singleNode.SapNumber);
+            oCellSapNumber.SetCellValue(singleNode.Data.SapNumber);
 
             ICell oCellSparePart = currentRow.GetCell(15);
-            oCellSparePart.SetCellValue(singleNode.SparePart);
+            oCellSparePart.SetCellValue(singleNode.Data.SparePart);
 
             ICell oCellInfo = currentRow.GetCell(16);
 
