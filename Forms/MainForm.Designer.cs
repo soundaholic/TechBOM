@@ -58,13 +58,15 @@
             comboBox_Language = new ComboBox();
             lbl_Status = new Label();
             progressBar = new ProgressBar();
+            textBox_LastCollumnLength = new TextBox();
+            label1 = new Label();
             groupBox_HeadData.SuspendLayout();
             SuspendLayout();
             // 
             // Button_Start
             // 
             Button_Start.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold);
-            Button_Start.Location = new Point(545, 355);
+            Button_Start.Location = new Point(529, 355);
             Button_Start.Margin = new Padding(4, 3, 4, 3);
             Button_Start.Name = "Button_Start";
             Button_Start.Size = new Size(104, 30);
@@ -395,6 +397,28 @@
             progressBar.Style = ProgressBarStyle.Continuous;
             progressBar.TabIndex = 16;
             // 
+            // textBox_LastCollumnLength
+            // 
+            textBox_LastCollumnLength.BackColor = SystemColors.MenuBar;
+            textBox_LastCollumnLength.Location = new Point(699, 317);
+            textBox_LastCollumnLength.Margin = new Padding(4, 3, 4, 3);
+            textBox_LastCollumnLength.MaxLength = 255;
+            textBox_LastCollumnLength.Name = "textBox_LastCollumnLength";
+            textBox_LastCollumnLength.Size = new Size(57, 23);
+            textBox_LastCollumnLength.TabIndex = 18;
+            textBox_LastCollumnLength.Text = "95";
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold);
+            label1.Location = new Point(513, 319);
+            label1.Margin = new Padding(4, 0, 4, 0);
+            label1.Name = "label1";
+            label1.Size = new Size(184, 17);
+            label1.TabIndex = 17;
+            label1.Text = "Letzte Spalte länge (Zeichen):";
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -402,6 +426,8 @@
             BackColor = Color.FromArgb(255, 255, 255);
             BackgroundImageLayout = ImageLayout.None;
             ClientSize = new Size(791, 402);
+            Controls.Add(textBox_LastCollumnLength);
+            Controls.Add(label1);
             Controls.Add(progressBar);
             Controls.Add(lbl_Status);
             Controls.Add(comboBoxProjects);
@@ -453,6 +479,8 @@
         private System.Windows.Forms.Label lbl_ScanDepth;
         private System.Windows.Forms.ComboBox comboBox_ScanDepth;
         private ProgressBar progressBar;
+        private TextBox textBox_LastCollumnLength;
+        private Label label1;
     }
 }
 

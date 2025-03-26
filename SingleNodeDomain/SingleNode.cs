@@ -7,7 +7,7 @@ namespace TechBOM.SingleNodeDomain
         private readonly NodeExtractor _extractor;
         private readonly NodeValidator _validator;
         public NodeData Data { get; private set; }
-        public bool IsZsb { get; private set; }
+        public bool IsRoot { get; private set; }
 
         public SingleNode(Document document)
         {
@@ -18,7 +18,7 @@ namespace TechBOM.SingleNodeDomain
             Data = _extractor.Extract(document);
 
             // Validate node
-            IsZsb = _validator.IsZsb(document);
+            IsRoot = NodeValidator.IsRoot(document);
         }
     }
 

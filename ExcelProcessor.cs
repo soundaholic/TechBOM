@@ -32,7 +32,7 @@ namespace TechBOM
 
             ISheet workSheet = WorkBook.GetSheet("bom");
 
-            if (singleNode.IsZsb)
+            if (singleNode.IsRoot)
             {
                 IRow oRowPartNumber = workSheet.GetRow(5);
                 ICell oCellPartNumber = oRowPartNumber.GetCell(7);

@@ -17,7 +17,9 @@ namespace TechBOM.SingleNodeDomain
             {
                 nodeData.PartNumber = GetPartNumber(document);
 
-                var userRefProps = GetUserRefProperties(document);
+                Parameters userRefProps = nodeData.UserRefProps = GetUserRefProperties(document);
+                Parameters parameters = nodeData.Params = GetParameters(document);
+
                 nodeData.Name = GetProperty(userRefProps, "BENENNUNG");
                 nodeData.DrawingNumber = GetProperty(userRefProps, "ZNR");
                 nodeData.PosNumber = GetProperty(userRefProps, "POS_NR");
@@ -38,11 +40,10 @@ namespace TechBOM.SingleNodeDomain
             {
                 _logger.Error(e, "Error while extracting node properties.");
             }
-
             return nodeData;
         }
 
-        private string GetProperty(Parameters userRefProps, string propName)
+        private static string GetProperty(Parameters userRefProps, string propName)
         {
             return userRefProps.Item(propName).ValueAsString();
         }
@@ -60,7 +61,7 @@ namespace TechBOM.SingleNodeDomain
             }
         }
 
-        private Parameters GetUserRefProperties(Document document)
+        private static Parameters GetUserRefProperties(Document document)
         {
             if (document is PartDocument partDoc)
             {
@@ -73,7 +74,27 @@ namespace TechBOM.SingleNodeDomain
             throw new ArgumentException("Unsupported document type.");
         }
 
-        private string GetPartNumber(Document document)
+        private static Parameters GetParameters(Document document)
+        {
+            ParameterSet parameterSet;
+            Parameters parameters;
+
+            if (document is PartDocument partDoc)
+            {
+                parameterSet = partDoc.Part.Parameters.RootParameterSet;
+                parameters = parameterSet.DirectParameters;
+                return parameters;
+            }
+            else if (document is ProductDocument productDoc)
+            {
+                parameterSet = productDoc.Product.Parameters.RootParameterSet;
+                parameters = parameterSet.DirectParameters;
+                return parameters;
+            }
+            throw new ArgumentException("Unsupported document type.");
+        }
+
+        private static string GetPartNumber(Document document)
         {
             try
             {
@@ -98,5 +119,4 @@ namespace TechBOM.SingleNodeDomain
             }
         }
     }
-
 }

@@ -41,6 +41,5 @@ namespace TechBOM
             DrawingNumberForTextBox = singleNode.Data.DrawingNumber;
             VersionForTextBox = singleNode.Data.Revision;
         }
-
     }
 }

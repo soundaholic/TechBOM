@@ -1,7 +1,12 @@
-﻿namespace TechBOM.SingleNodeDomain
+﻿using KnowledgewareTypeLib;
+using MECMOD;
+
+namespace TechBOM.SingleNodeDomain
 {
     public class NodeData
     {
+        public Parameters UserRefProps { get; set; }
+        public Parameters Params { get; set; }
         public string PartNumber { get; set; }
         public string PosNumber { get; set; }
         public string Revision { get; set; }

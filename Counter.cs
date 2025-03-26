@@ -72,7 +72,7 @@ namespace TechBOM
                 }
             }
 
-            CatiaProcessor.Instance.CatHelperReset();
+            //CatiaProcessor.Instance.CatHelperReset();
 
             Products products = oProduct.Products;
 
@@ -80,7 +80,7 @@ namespace TechBOM
             {
                 Product subProduct = products.Item(i);
 
-                bool isActive = nodeValidator.IsActive(subProduct);
+                bool isActive = NodeValidator.IsActive(subProduct);
 
                 string partNumber = subProduct.get_PartNumber();
 

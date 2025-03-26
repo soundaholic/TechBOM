@@ -16,12 +16,13 @@ namespace TechBOM
 
         private RootNode _rootNode;  // Store the current RootNode instance
         private ExcelProcessor _excelProcessor;  // Store the current ExcelProcessor instance
+        private CatiaProcessor _catiaProcessor;
 
         private Application _catia = CatiaConnect.Instance.ConnectCatia();
         private string _saveFilePathFormData = string.Empty;
         private string _TemplateFilePath = string.Empty;
         private List<PartDocument> _productionParts = [];
-        
+
         //private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         public MainForm(ICatiaConnect catiaConnect, Func<ExcelProcessor> excelProcessorFactory, ICounter counter, Func<RootNode> rootNodeFactory)
@@ -40,34 +41,61 @@ namespace TechBOM
             ComboBoxLanguage_SelectedIndexChanged(null, null);
         }
 
+
+        private bool IsTechnologie()
+        {
+            string rn = _rootNode.RootPartNumber;
+            string thirdChar = rn.Substring(2, 1);
+
+            if (thirdChar == "_")
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         private void Form1_Load(object sender, EventArgs e)
         {
             if (_rootNode.ActiveDoc is ProductDocument)
             {
                 _saveFilePathFormData = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "formData.txt");
 
-                RefreshFormData();
+                if (IsTechnologie())
+                {
+                    RefreshFormData();
 
-                LoadFormData();
+                    LoadFormData();
 
-                try
-                {
-                    _TemplateFilePath = _excelProcessor.TemplateFilePath;
+                    try
+                    {
+                        _TemplateFilePath = _excelProcessor.TemplateFilePath;
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        MessageBox.Show(ex.Message, "ArgumentException", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        Close();
+                    }
+                    catch (DirectoryNotFoundException ex)
+                    {
+                        MessageBox.Show(ex.Message, "DirectoryNotFoundException", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        Close();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        Close();
+                    }
                 }
-                catch (ArgumentException ex)
+                else
                 {
-                    MessageBox.Show(ex.Message, "ArgumentException", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("This Tool is for Technologie Design only\n" +
+                        "Name like: \"RF_..., ST_..., LK_... etc.\"\n" +
+                        "For FFT-Standard Data use \"BOM-Exporter\"", "Warning!", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     Close();
-                }
-                catch (DirectoryNotFoundException ex)
-                {
-                    MessageBox.Show(ex.Message, "DirectoryNotFoundException", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    Close();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    Close();
+                    return;
                 }
             }
             else
@@ -80,6 +108,14 @@ namespace TechBOM
 
         private async void Button_Start_Click(object sender, EventArgs e)
         {
+            _catiaProcessor = new CatiaProcessor();
+
+            if (Convert.ToInt32(textBox_LastCollumnLength.Text) > 255)
+            {
+                MessageBox.Show("Maximale Länge darf nicht größer als 255 Zeichen sein");
+                return;
+            }
+
             // Reset the Counter
             Counter.Instance.Reset();  // Ensure the counter is reset at the start
 
@@ -88,12 +124,13 @@ namespace TechBOM
 
             RefreshFormData();
             _productionParts.Clear();
-            CatiaProcessor.Instance.CatHelperReset();
+
+            _catiaProcessor.CatHelperReset();
 
             if (File.Exists(_rootNode.SaveFileName))
             {
                 DialogResult result = MessageBox.Show("File already exists. Do you want to overwrite it?", "File exists", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                
+
                 if (result == DialogResult.Yes)
                 {
                     bool isSaved = false;
@@ -163,9 +200,10 @@ namespace TechBOM
 
                     // Step 5: Adjust column width
                     progress.Report((90, "Adjusting column width..."));
-                    for (int i = 0; i < 500; i++)
+                    for (int i = 0; i <= 15; i++)
                     {
                         _excelProcessor.WorkSheet.AutoSizeColumn(i);
+
                     }
 
                     for (int i = 0; i < 500; i++)
@@ -173,6 +211,8 @@ namespace TechBOM
                         _excelProcessor.WorkSheet.AutoSizeRow(i);
                     }
 
+                    _excelProcessor.WorkSheet.SetColumnWidth(16, Convert.ToInt32(textBox_LastCollumnLength.Text) * 256);
+                    
                     // Step 6: Save the Excel file
                     progress.Report((95, "Saving Excel document..."));
                     _excelProcessor.SaveExcelDocument(_rootNode.SaveFileName);
@@ -223,29 +263,32 @@ namespace TechBOM
 
         private void ProcessBomEntry()
         {
-            CatiaProcessor.Instance.CatHelperReset();
+            _catiaProcessor.CatHelperReset();
 
             if (_rootNode.ActiveDoc is ProductDocument oProductDoc)
             {
                 Product oRootProd = oProductDoc.Product;
+
+                string rootPartNumber = oRootProd.get_Name();
+
                 var bomEntry = new BomEntry(_excelProcessor.WorkSheet);
                 var depth = string.Empty;
-                
+
                 Invoke((MethodInvoker)delegate
                 {
                     depth = comboBox_ScanDepth.Text;
                 });
 
                 // Walk down the tree and fill the BOM
-                CatiaProcessor.Instance.WalkDownTree(oRootProd, 0 , depth);
+                _catiaProcessor.WalkDownTree(oRootProd, 0, depth);
 
                 // Order by PosNumber
-                var orderedNodes = from s in CatiaProcessor.Instance.Nodes
+                var orderedNodes = from s in _catiaProcessor.Nodes
                                    orderby s.Data.PosNumber ascending
                                    select s;
-                CatiaProcessor.Instance.Nodes = orderedNodes.ToList();
+                _catiaProcessor.Nodes = orderedNodes.ToList();
 
-                int totalNodes = CatiaProcessor.Instance.Nodes.Count;
+                int totalNodes = _catiaProcessor.Nodes.Count;
                 int i = 0;
 
                 foreach (var node in orderedNodes)
@@ -353,6 +396,5 @@ namespace TechBOM
             lbl_Status.Text = $"{message} ({percent}%)";
             progressBar.Value = percent;
         }
-
     }
 }

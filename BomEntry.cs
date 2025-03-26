@@ -16,7 +16,7 @@ namespace TechBOM
             string additionalInfo = singleNode.Data.AdditionalInfo;
             string dinIso = singleNode.Data.DinIso;
 
-            if (singleNode.IsZsb) return;
+            if (singleNode.IsRoot) return;
 
             IRow currentRow = _workSheet.GetRow(13 + rowNumber);
 
@@ -56,8 +56,12 @@ namespace TechBOM
             oCellSapNumber.SetCellValue(singleNode.Data.SapNumber);
 
             ICell oCellSparePart = currentRow.GetCell(15);
-            oCellSparePart.SetCellValue(singleNode.Data.SparePart);
 
+            if (!string.IsNullOrWhiteSpace(singleNode.Data.SparePart))
+            {
+                oCellSparePart.SetCellValue("X");
+            } 
+            
             ICell oCellInfo = currentRow.GetCell(16);
 
             if (!string.IsNullOrWhiteSpace(remark))
