@@ -1,37 +1,48 @@
 ﻿using INFITF;
 using KnowledgewareTypeLib;
+using NLog;
 using ProductStructureTypeLib;
 
 namespace TechBOM.SingleNodeDomain
 {
     public class NodeValidator
     {
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+
         public static bool IsRoot(Document document)
         {
-            string name1 = document.Application.ActiveDocument.FullName;
-            string name2 = document.FullName;
+            if (document == null)
+            {
+                _logger.Error("Document is null.");
+                return false;
+            }
 
-            return name1 == name2;
+            return document.Application.ActiveDocument.FullName == document.FullName;
         }
 
         public static bool IsAdapter(SingleNode node)
         {
-            if (node.Data.UserRefProps.Count != 0)
+            try
             {
-                //if (!string.IsNullOrWhiteSpace(node.Data.Name))
-                //{
-                //    return node.Data.Name.ToLower() == "adapter".ToLower();
-                //}
-                if (node.Data.PartNumber.Contains("V00_ADAPTER")) 
+                if (node.Data.UserRefProps.Count != 0)
                 {
-                    return true;
+                    if (node.Data.PartNumber.Contains("_______V00_ADAPTER"))
+                    {
+                        return true;
+                    }
+                    else if (node.Data.PartNumber.Contains("BEZ_AXIS"))
+                    {
+                        return true;
+                    }
                 }
-                else if (node.Data.PartNumber.Contains("BEZ_AXIS"))
-                {
-                    return true;
-                }
+                return false;
             }
-            return false;
+            catch 
+            {
+                _logger.Error($"Error while checking if the node is an adapter - {node.Data.PartNumber}");
+                return false;
+            }
+            
         }
 
         public static bool IsUb(SingleNode node) 
@@ -71,16 +82,26 @@ namespace TechBOM.SingleNodeDomain
 
         public static bool IsCorrectStartModel(SingleNode node)
         {
-            foreach (KnowledgewareTypeLib.Parameter param in node.Data.UserRefProps)
+            try
             {
-                string paramName = param.get_Name();
-
-                if (paramName.Contains("ZNR"))
+                foreach (Parameter param in node.Data.UserRefProps)
                 {
-                    return true;
+                    string paramName = param.get_Name();
+
+                    if (paramName.Contains("ZNR"))
+                    {
+                        return true;
+                    }
                 }
+                return false;
             }
-            return false;
+            catch 
+            {
+                _logger.Error($"Error while checking if the node is a correct start model - {node.Data.PartNumber}");
+
+                return false;
+            }
+            
         }
 
         public static bool IsComponent(object docListItem)
@@ -102,13 +123,14 @@ namespace TechBOM.SingleNodeDomain
             }
             catch
             {
+                _logger.Error("Error while checking if the node is a component.");
                 return false;
             }
         }
 
         public static bool IsActive(Product instance)
         {
-            string parentPartNumber = string.Empty;
+            string parentPartNumber;
             string instanceName = string.Empty;
             try
             {
@@ -120,7 +142,8 @@ namespace TechBOM.SingleNodeDomain
             }
             catch
             {
-                MessageBox.Show($"Es ist ein Problem in dem Knoten: \"{parentPartNumber}\" mit dem Part: \"{instanceName}\" aufgetreten");
+                _logger.Error($"Error while checking if the node is active - {instanceName}");
+                //MessageBox.Show($"Es ist ein Problem in dem Knoten: \"{parentPartNumber}\" mit dem Part: \"{instanceName}\" aufgetreten");
                 return false;
             }
         }

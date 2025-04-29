@@ -165,6 +165,19 @@ namespace TechBOM
 
             // Start the asynchronous process
             await RunBomProcessingAsync(progress);
+
+            if (Counter.CountOfCoruptedParts != 0) 
+            {
+                MessageBox.Show
+                    (
+                        $"Some links are broken. Please check the CATIA Structure\nCount of broken links: {Counter.CountOfCoruptedParts}",
+                        "Warning",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning,
+                        MessageBoxDefaultButton.Button1,
+                        MessageBoxOptions.DefaultDesktopOnly
+                    );
+            }
         }
 
         private async Task RunBomProcessingAsync(IProgress<(int, string)> progress)

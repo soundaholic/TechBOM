@@ -19,17 +19,6 @@ namespace TechBOM
 
         private int _count = 0;
 
-        //private static CatiaProcessor _instance = new();
-
-        //public static CatiaProcessor Instance
-        //{
-        //    get
-        //    {
-        //        _instance ??= new CatiaProcessor();
-        //        return _instance;
-        //    }
-        //}
-
         public void CatHelperReset()
         {
             Names.Clear();
@@ -38,7 +27,16 @@ namespace TechBOM
 
         public void WalkDownTree(Product oInProduct, int currentDepth, string maxDepthStr)
         {
-            Document oDoc = (Document)oInProduct.ReferenceProduct.Parent;
+            Document? oDoc = null;
+
+            try
+            {
+                oDoc = (Document)oInProduct.ReferenceProduct.Parent;
+            }
+            catch
+            {
+                _logger.Info($"Unable to retrieve the activity status of Product {oInProduct.get_Name()}");
+            }
 
             SingleNode singleNode = new(oDoc);
 
@@ -111,14 +109,21 @@ namespace TechBOM
 
             Products cInstances = oInProduct.Products;
 
+            SingleNode singleNodeInstance = null;
+
             if (_isActive)
             {
                 for (int i = 1; i <= cInstances.Count; i++)
                 {
                     Product oInst = cInstances.Item(i);
-                    SingleNode singleNodeInstance = new((Document)oInst.ReferenceProduct.Parent);
-
-                    //_isCorrect = NodeValidator.IsCorrectStartModel(singleNodeInstance);
+                    try
+                    {
+                        singleNodeInstance = new((Document)oInst.ReferenceProduct.Parent);
+                    }
+                    catch
+                    {
+                        _logger.Info($"Unable to retrieve the activity status of Product {oInst.get_Name()}");
+                    }
 
                     _isAdapter = NodeValidator.IsAdapter(singleNodeInstance);
 
@@ -129,11 +134,6 @@ namespace TechBOM
 
                     oInst.ApplyWorkMode(CatWorkModeType.DESIGN_MODE);
                     WalkDownTree(oInst, currentDepth + 1, maxDepthStr);
-
-                    //if (_isCorrect)
-                    //{
-                        
-                    //}
                 }
             }
         }

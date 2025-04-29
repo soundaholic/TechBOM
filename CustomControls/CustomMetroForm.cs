@@ -32,7 +32,7 @@ public class CustomMetroForm : MetroForm
         Font customTitleFont = new Font("Segoe UI", 12, FontStyle.Bold);
 
         // Draw the custom title in the desired font and position
-        e.Graphics.DrawString("TechBOM v3.1", customTitleFont, Brushes.Black, new PointF(20, 8));  // Adjust position
+        e.Graphics.DrawString("TechBOM v3.2", customTitleFont, Brushes.Black, new PointF(20, 8));  // Adjust position
 
         // Clean up the font object after use
         customTitleFont.Dispose();

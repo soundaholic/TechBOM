@@ -15,6 +15,8 @@ namespace TechBOM
         // Use ConcurrentDictionary to make it thread-safe
         public ConcurrentDictionary<string, int> PartCount { get; private set; }
 
+        public static int CountOfCoruptedParts { get; private set; }
+
         //public Dictionary<string, int> PartCount { get; private set; }
 
         public Counter()
@@ -50,6 +52,7 @@ namespace TechBOM
 
         public void CountParts(Product oProduct, int currentDepth, string maxDepthStr)
         {
+            string partNumber = "";
             NodeValidator nodeValidator = new();
 
             // if the depth is "All", then disable the maximum depth check
@@ -82,7 +85,15 @@ namespace TechBOM
 
                 bool isActive = NodeValidator.IsActive(subProduct);
 
-                string partNumber = subProduct.get_PartNumber();
+                try
+                {
+                    partNumber = subProduct.get_PartNumber();
+                }
+                catch
+                {
+                    CountOfCoruptedParts++;
+                }
+                
 
                 if (isActive)
                 {
